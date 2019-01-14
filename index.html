@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>H5调用相机上传图片</title>
+    <style type="text/css">
+    *{margin:0;padding:0;}
+    .wrap{position:relative;margin:1rem auto 0;width: 8.9333rem; height: 5.0667rem;border-radius: 0.1067rem;box-shadow:0 0 0.16rem 0 rgba(183, 183, 186,0.42);text-align:center}
+    .area{position:absolute;width:100%;height:100%;top:0;left:0;opacity:0;}
+     img{position:absolute;width:7.1333rem;height:4.48rem;border:0.0267rem dashed #ceced2; border-radius: 0.1067rem;top:0.2933rem;left:0.88rem;padding:0.0133rem;}
+     .addCard{font-size:1rem;padding-top:1.2rem}
+     .f28{font-size:0.3733rem}
+     .hide{display:none}
+     .btn{margin-left:3rem;width:4rem;height:1.0667rem;background: rgb(230, 69, 69);border:none;color: #fff;}
+     .btn.disabled{background: gray;}
+     .agin{position:absolute;font-size:0.4267rem;margin-top:2rem;width:100%;text-align: center;color:red;}
+    </style>
+</head>
+<body>
+    <div id="box">
+        <div class="wrap">
+                <image alt="" src="" id="cardF_image" class="hide"/>
+                <input type="file" accept="image/*" capture="camera" class="area areaA">
+                <!-- capture属性，可以捕获到系统默认的设备，比如camera相机，camcorder摄像机，microphone录音-->
+                <!-- accept表示，直接打开系统文件目录 -->
+                <!-- input:file 还支持一个multiple属性，表示可以支持多选，如：
+                    <input type="file" accept="image/*" multiple>
+                    加上multiple后，capture就没作用了
+                -->
+                <div class="beforeF">
+                    <div class="addCard">+</div>
+                    <p class="f28 g6">点击拍摄二代身份证人物面</p>
+                </div>
+                <div class="agin afterF hide">点击重拍</div>
+        </div>
+        <div class="wrap">
+                <image alt="" src="" id="cardB_image" class="hide"/>
+                <input type="file" accept="image/*" capture="camera" class="area areaB">
+                <!-- capture属性，可以捕获到系统默认的设备，比如camera相机，camcorder摄像机，microphone录音-->
+                <!-- accept表示，直接打开系统文件目录 -->
+                <!-- input:file 还支持一个multiple属性，表示可以支持多选，如：
+                    <input type="file" accept="image/*" multiple>
+                    加上multiple后，capture就没作用了
+                -->
+                <div class="beforeB">
+                    <div class="addCard">+</div>
+                    <p class="f28 g6">点击拍摄二代身份证国徽面</p>
+                </div>
+                <div class="agin afterB hide">点击重拍</div>
+        </div>
+        <input type="button" class="btn disabled" id="jsBtn" value="提交" disabled="disabled">
+    </div>
+</body>
+<script
+  src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous"></script>
+  <!-- <script src="vue.min.js"></script> -->
+  <script>
+       var winW=document.body.clientWidth;
+       document.documentElement.style.fontSize=winW/750*75+"px"
+  </script>
+  <script type='text/javascript'>
+  var formData=new FormData(),
+      idCardFirst,
+      idCardBack,
+      idCardVerify={
+    init:function(){
+        this.frontFn();// 正面点击事件开始
+        this.backFn();// 反面点击事件开始
+        this.submitFn();//下一步按钮点击事件
+    },
+    readURL:function(input,img,layerA,layerB){//读取上传图片
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $(input).css("z-index","3");
+                    $(img).attr("src",e.target.result).removeClass("hide")
+                    $(layerA).hide();
+                    $(layerB).removeClass("hide");
+                }
+                reader.readAsDataURL(input.files[0]);
+            } 
+        },
+        compressImage:function(image){//压缩图片
+            var canvas = document.createElement('canvas')
+            var ctx = canvas.getContext('2d')
+            // 将 canvas 宽高设为原图的 1/10，即将原图宽高压缩 10 倍
+            canvas.width = image.width
+            canvas.height = image.height
+            // 绘制图片
+            ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, canvas.width, canvas.height)
+            // 将 canvas 导出为 base64 URL 并返回
+            return canvas.toDataURL('image/jpeg', 0.4)
+        },
+        base64Url2Blob:function(url){
+             // 将base64url通过 , 分割为含有两个元素的数组
+            var temp = url.split(',')
+            // 将图片的base64编码数据解码
+            var bytes = window.atob(temp[1])
+            // 匹配图片的 mime
+            var mime = temp[0].match(/:(.*?);/)[1]
+            // 创建一个类型化数组，该数组的长度与解码后的图片数据长度相同
+            var ia = new Uint8Array(bytes.length)
+            // 变量图片数据的每一位，并将每一位的 Unicode 编码存入类型化数组
+            for (var i = 0; i < bytes.length; i++) {
+               ia[i] = bytes.charCodeAt(i)
+            }
+            // 通过类型化数组创建一个 Blob 对象
+            return new Blob([ia], {type: mime})
+        },
+        frontFn:function(){
+            var that=this;
+            $(document).on("change",".areaA",function(e){  
+                that.readURL(this,"#cardF_image",".beforeF",".afterF");
+                idCardFirst=e.target.files[0];
+                if(!$(".afterB").hasClass("hide")){
+                    $("#jsBtn").removeClass("disabled").removeAttr("disabled");
+                }
+                var fileReader = new FileReader();
+                fileReader.onload=function(){
+                    var image = new Image()
+                    image.onload = () => {
+                        // 对 image 进行的操作
+                        var imageUrl = idCardVerify.compressImage (image)
+                        idCardFirst=imageUrl
+                    }
+                    image.src = fileReader.result   
+                }
+                fileReader.readAsDataURL(idCardFirst)
+            })
+        },
+        backFn:function(){
+            var that=this;
+            $(".areaB").change(function(e){               
+                that.readURL(this,"#cardB_image",".beforeB",".afterB");
+                idCardBack=e.target.files[0];
+                if(!$(".afterF").hasClass("hide")){
+                    $("#jsBtn").removeClass("disabled").removeAttr("disabled");
+                }
+                var fileReader = new FileReader();
+                fileReader.onload=function(){
+                    var image = new Image()
+                    image.onload = () => {
+                        // 对 image 进行的操作
+                        var imageUrl = idCardVerify.compressImage (image)
+                        idCardBack=imageUrl
+                    }
+                    image.src = fileReader.result   
+                }
+                fileReader.readAsDataURL(idCardBack)
+            })
+        },
+        submitFn:function(){
+            var that=this; 
+            $(document).on("click","#jsBtn",function(e){ 
+                formData.append("id_card_first",that.base64Url2Blob(idCardFirst));
+                formData.append("id_card_last",that.base64Url2Blob(idCardBack));
+                $(this).attr("disabled","disabled");
+                $.ajax({
+                    url:".........",
+                    type:'post',
+                    cache:false,
+                    processData:false,
+                    contentType:false,
+                    data:formData,
+                    success:function(data){
+                        $("#jsBtn").removeAttr("disabled");
+                   
+                    },
+                    error:function(data){
+                        $("#jsBtn").removeAttr("disabled");
+                    },
+                    complete:function(){
+                        formData=new FormData()
+                    }
+                })
+            })
+        }
+  }
+  idCardVerify.init();
+  </script>
+</html>
